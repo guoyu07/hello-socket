@@ -1,0 +1,243 @@
+\documentclass[UTF8]{beamer}
+
+\usepackage{minted}
+\newminted{c}{autogobble,breaklines}
+
+\usepackage{xeCJK}
+\setCJKmainfont{STFangsong}
+\usetheme{CambridgeUS}
+
+\AtBeginSection[]
+{
+  \begin{frame}<beamer>{目录}
+    \tableofcontents[
+      currentsection,
+      currentsubsection,
+      hideothersubsections,
+      sectionstyle=show/shaded,
+    ]
+  \end{frame}
+}
+
+\title{Unix Socket 编程入门}
+\author{吕海涛 \\ \texttt{share@lvht.net}}
+\date{\today}
+
+\begin{document}
+\begin{frame}
+  \titlepage
+\end{frame}
+\section{基本概念}
+\subsection{字节顺序}
+\begin{frame}{大端与小端}
+  \centerline{\includegraphics[width=\textwidth]{img/byte-order.png}}
+\end{frame}
+\begin{frame}[fragile]{检查字节顺序}
+  \begin{ccode}
+    #include <arpa/inet.h>
+
+    union { int16_t s; char c[2]; } un;
+
+    un.s = 0x0102;
+    printf("host：0x0102 => %d-%d\n", un.c[0], un.c[1]);
+    un.s = htons(0x0102);
+    printf("net：0x0102 => %d-%d\n", un.c[0], un.c[1]);
+  \end{ccode}
+\end{frame}
+\begin{frame}[fragile]{字节顺序转换}
+  网络数据传输使用\textbf{大端}字节顺序！
+  \begin{ccode}
+     #include <arpa/inet.h>
+
+     uint32_t htonl(uint32_t hostlong);
+     uint16_t htons(uint16_t hostshort);
+     uint32_t ntohl(uint32_t netlong);
+     uint16_t ntohs(uint16_t netshort);
+  \end{ccode}
+\end{frame}
+\subsection{IP地址表示}
+\begin{frame}[fragile]{IP地址结构体}
+  \begin{ccode}
+    #include <netinet/in.h>
+
+    struct sockaddr_in {
+      short          sin_family;  // e.g. AF_INET
+      unsigned short sin_port;    // e.g. htons(3490)
+      struct in_addr sin_addr;    // see struct in_addr, below
+      char           sin_zero[8]; // zero this if you want to
+    };
+
+    struct in_addr {
+      unsigned long s_addr;  // load with inet_aton()
+    };
+  \end{ccode}
+\end{frame}
+\begin{frame}[fragile]{IP地址转换}
+  \begin{ccode}
+    #include <arpa/inet.h>
+
+    int inet_aton(const char *strptr, struct in_addr *addrptr);
+    char *inet_ntoa(struct in_addr inaddr);
+
+    int inet_pton(int family, const char *strptr, void *addrptr);
+    const char *inet_ntop(int family, const void *addrptr, char *strptr, size_t len);
+  \end{ccode}
+\end{frame}
+\subsection{TCP/IP通信流程}
+\begin{frame}{TCP/IP通信流程}
+  \centerline{\includegraphics[height=\textheight]{img/tcp.png}}
+\end{frame}
+\section{网络系统调用}
+\subsection{系统调用列表}
+\begin{frame}[fragile]
+  \begin{ccode}
+    #include <sys/socket.h>
+
+    int socket(int family, int type, int protocol);
+    int connect(int sockfd, const struct sockaddr *servaddr, socklen_t addrlen);
+    int bind(int sockfd, const struct sockaddr *myaddr, socklen_t addrlen);
+    int listen(int sockfd, int backlog);
+    int accept(int sockfd, struct sockaddr *cliaddr, socklen_t *addrlen);
+    int send(int socket, const void *buffer, int length, int flags);
+    int recv(int socket, void *buffer, int length, int flags);
+    int close(int sockfd);
+  \end{ccode}
+\end{frame}
+\subsection{socket()}
+\begin{frame}[fragile]{socket}
+  \begin{ccode}
+    int socket(int family, int type, int protocol);
+  \end{ccode}
+  \pause
+  \begin{columns}
+    \only<1> {
+      \begin{column}{\textwidth}
+        \begin{center}
+          \begin{tabular}{ | l | c | r }
+            \hline
+            family & Description \\ \hline
+            AF\_INET & IPv4 protocols \\
+            AF\_INET6 & IPv6 protocols \\
+            AF\_LOCAL & Unix domain protocols \\
+            \hline
+          \end{tabular}
+        \end{center}
+      \end{column}
+    }
+    \only<2> {
+      \begin{column}{\textwidth}
+        \begin{center}
+          \begin{tabular}{ | l | c | r }
+            \hline
+            type & Description \\ \hline
+            SOCK\_STREAM & stream socket \\
+            SOCKAF\_DGRAM & datagram socket \\
+            \hline
+          \end{tabular}
+        \end{center}
+      \end{column}
+    }
+    \only<3> {
+      \begin{column}{\textwidth}
+        \begin{center}
+          \begin{tabular}{ | l | c | r }
+            \hline
+            protocol & Description \\ \hline
+            IPPROTO\_TCP & TCP transport protocol \\
+            IPPROTO\_UDP & TCP transport protocol \\
+            IPPROTO\_SCTP & TCP transport protocol \\
+            \hline
+          \end{tabular}
+        \end{center}
+      \end{column}
+    }
+  \end{columns}
+\end{frame}
+\subsection{listen()}
+\begin{frame}[fragile]{listen}
+  \begin{ccode}
+    int listen(int sockfd, int backlog);
+  \end{ccode}
+  \begin{columns}
+    \pause
+    \begin{column}{0.5\textwidth}
+      \begin{center}
+        \includegraphics[width=\textwidth]{img/3-way-handshake.png}
+      \end{center}
+    \end{column}
+    \pause
+    \begin{column}{0.5\textwidth}
+      \begin{center}
+        \includegraphics[width=\textwidth]{img/backlog.png}
+      \end{center}
+    \end{column}
+  \end{columns}
+\end{frame}
+\section{示例代码}
+\subsection{客户端示例}
+\begin{frame}[fragile]{获取服务端IP}
+  \begin{ccode}
+    int sockfd, numbytes, rv;
+    char ip[INET6_ADDRSTRLEN];
+    char buf[1024];
+    struct addrinfo hints, *servinfo, *p;
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+
+    if ((rv = getaddrinfo("bilibili.com", "http", &hints, &servinfo)) != 0) {
+      fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
+      return 1;
+    }
+  \end{ccode}
+\end{frame}
+\begin{frame}[fragile]{发起TCP连接}
+  \begin{ccode}
+    for (p = servinfo; p != NULL; p = p->ai_next) {
+      if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+        perror("==> client: socket");
+        continue;
+      }
+      if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+        perror("==> client: connect");
+        continue;
+      }
+      break;
+    }
+  \end{ccode}
+\end{frame}
+\begin{frame}[fragile]{收发HTTP数据}
+  \begin{ccode}
+    char req[] = "GET / HTTP/1.0\r\nHost: bilibili.com\r\n\r\n";
+    if ((numbytes = recv(sockfd, buf, 1024, 0)) == -1) {
+      perror("==> client: recv");
+      return 3;
+    }
+    if ((numbytes = recv(sockfd, buf, 1024, 0)) == -1) {
+      perror("==> client: recv");
+      return 3;
+    }
+    printf("==> client: received\n%.*s", numbytes, buf);
+
+    close(sockfd);
+  \end{ccode}
+\end{frame}
+\subsection{服务端示例}
+\begin{frame}{服务端示例}
+\end{frame}
+\section{IO模型}
+\begin{frame}
+\end{frame}
+\subsection{阻塞IO}
+\subsection{非阻塞IO}
+\subsection{IO多路复用}
+\subsubsection{select}
+\subsubsection{poll}
+\subsubsection{kqueue}
+\section{主要服务端软件IO模型}
+\subsection{Redis}
+\subsection{PHP-FPM}
+\subsection{Memcached}
+\subsection{Nginx}
+\subsection{Swoole}
+\end{document}

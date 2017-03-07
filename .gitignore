@@ -1,0 +1,12 @@
+_minted-socket
+*.log
+*.aux
+*.log
+*.nav
+*.out
+*.pdf
+*.snm
+*.toc
+*.vrb
+.DS_Store
+a.out
