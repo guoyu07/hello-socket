@@ -110,50 +110,31 @@
   \begin{ccode}
     int socket(int family, int type, int protocol);
   \end{ccode}
-  \pause
-  \begin{columns}
-    \only<1> {
-      \begin{column}{\textwidth}
-        \begin{center}
-          \begin{tabular}{ | l | c | r }
-            \hline
-            family & Description \\ \hline
-            AF\_INET & IPv4 protocols \\
-            AF\_INET6 & IPv6 protocols \\
-            AF\_LOCAL & Unix domain protocols \\
-            \hline
-          \end{tabular}
-        \end{center}
-      \end{column}
-    }
-    \only<2> {
-      \begin{column}{\textwidth}
-        \begin{center}
-          \begin{tabular}{ | l | c | r }
-            \hline
-            type & Description \\ \hline
-            SOCK\_STREAM & stream socket \\
-            SOCKAF\_DGRAM & datagram socket \\
-            \hline
-          \end{tabular}
-        \end{center}
-      \end{column}
-    }
-    \only<3> {
-      \begin{column}{\textwidth}
-        \begin{center}
-          \begin{tabular}{ | l | c | r }
-            \hline
-            protocol & Description \\ \hline
-            IPPROTO\_TCP & TCP transport protocol \\
-            IPPROTO\_UDP & TCP transport protocol \\
-            IPPROTO\_SCTP & TCP transport protocol \\
-            \hline
-          \end{tabular}
-        \end{center}
-      \end{column}
-    }
-  \end{columns}
+  \begin{center}
+    \begin{tabular}{ | l | c | r }
+      \hline
+      family & Description \\ \hline
+      AF\_INET & IPv4 protocols \\
+      AF\_INET6 & IPv6 protocols \\
+      AF\_LOCAL & Unix domain protocols \\
+      \hline
+    \end{tabular}
+    \begin{tabular}{ | l | c | r }
+      \hline
+      type & Description \\ \hline
+      SOCK\_STREAM & stream socket \\
+      SOCKAF\_DGRAM & datagram socket \\
+      \hline
+    \end{tabular}
+    \begin{tabular}{ | l | c | r }
+      \hline
+      protocol & Description \\ \hline
+      IPPROTO\_TCP & TCP transport protocol \\
+      IPPROTO\_UDP & TCP transport protocol \\
+      IPPROTO\_SCTP & TCP transport protocol \\
+      \hline
+    \end{tabular}
+  \end{center}
 \end{frame}
 \subsection{listen()}
 \begin{frame}[fragile]{listen}
@@ -215,10 +196,6 @@
       perror("==> client: recv");
       return 3;
     }
-    if ((numbytes = recv(sockfd, buf, 1024, 0)) == -1) {
-      perror("==> client: recv");
-      return 3;
-    }
     printf("==> client: received\n%.*s", numbytes, buf);
 
     close(sockfd);
@@ -265,6 +242,7 @@
         perror("==> server: accept");
         continue;
       }
+      // fork ?
       do {
         recv_num = recv(conn_fd, buf, sizeof buf, 0);
         send(conn_fd, buf, recv_num, 0);
@@ -435,6 +413,23 @@
   \end{enumerate}
 \end{frame}
 \subsection{epoll}
+\begin{frame}[fragile]{epoll结构体}
+  \begin{ccode}
+    #include <sys/epoll.h>
+
+    typedef union epoll_data {
+        void        *ptr;
+        int          fd;
+        uint32_t     u32;
+        uint64_t     u64;
+    } epoll_data_t;
+
+    struct epoll_event {
+        uint32_t     events;      /* Epoll events */
+        epoll_data_t data;        /* User data variable */
+    };
+  \end{ccode}
+\end{frame}
 \begin{frame}[fragile]{epoll系统调用}
   \begin{ccode}
     #include <sys/epoll.h>
@@ -487,12 +482,17 @@
     }
   \end{ccode}
 \end{frame}
+\begin{frame}[fragile]{epoll的问题}
+  \begin{enumerate}
+    \item 难道epoll也有问题？？$O(k)$
+  \end{enumerate}
+\end{frame}
 \section{主要服务端软件IO模型}
 \subsection{memcached}
 \begin{frame}[fragile]{memcached}
   \centerline{\includegraphics[width=\textwidth]{img/memcached-model.jpg}}
 \end{frame}
-\subsection{nginx}
+\subsection{nginx/php-fpm}
 \begin{frame}[fragile]{nginx/php-fpm}
   \centerline{\includegraphics[width=\textwidth]{img/nginx-model.png}}
 \end{frame}
