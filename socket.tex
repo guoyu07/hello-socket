@@ -359,15 +359,80 @@
 \subsection{poll}
 \begin{frame}[fragile]{poll系统调用}
   \begin{ccode}
+    #include <poll.h>
+    int poll(struct pollfd *fdarray, unsigned long nfds, int timeout);
+
+    struct pollfd {
+      int    fd;       /* descriptor to check */
+      short  events;   /* events of interest on fd */
+      short  revents;  /* events that occurred on fd */
+    };
   \end{ccode}
 \end{frame}
-\begin{frame}[fragile]{poll流程}
+\begin{frame}[fragile]{初始化}
   \begin{ccode}
+    struct poolfd fds[1024];
+    int fdmax, nready;
+    fds[0].fd = listen_fd;
+    fds[0].events = POLLRDNORM; // monitor read
+    fdmax = 0;
+    for (int i = 1; i < 1024; i++) {
+      fds[i].fd = -1;
+    }
+  \end{ccode}
+\end{frame}
+\begin{frame}[fragile]{主事件循环}
+  \begin{ccode}
+    while (1) {
+      if (nready = pool(fds, fdmax + 1, NULL, INFTIM) == -1) {
+        perror("==> server: pool");
+        return 4;
+      }
+      // check fd
+    }
+  \end{ccode}
+\end{frame}
+\begin{frame}[fragile]{检查传入连接}
+  \begin{ccode}
+    if (fds[0].revents & POLLRDNORM) {
+      int cli_addr_len = sizeof cli_addr;
+      conn_fd = accept(listen_fd, (struct sockaddr *)&cli_addr, &cli_addr_len);
+      fcntl(conn_fd, F_SETFL, O_NONBLOCK);
+      if (conn_fd > fdmax) fdmax = conn_fd;
+      for (int i = 0; i < 1024; i++) {
+        if (fds[i].fd < 0) {
+          fds[i].fd = conn_fd;
+          fds[i].events = POLLRDNORM;
+          break;
+        }
+      }
+      // error check
+      if (--nready <= 0) continue;
+    }
+  \end{ccode}
+\end{frame}
+\begin{frame}[fragile]{接收客户端数据}
+  \begin{ccode}
+    for (int i = 1; i <= fdmax; i++) {
+      int fd = fds[i].fd;
+      if (fd < 0) continue;
+      if (fds[i].revents & POLLRDNORM) {
+        recv_num = recv(fd, buf, sizeof buf, 0);
+        if (recv_num > 0) {
+          send(fd, buf, recv_num, 0);
+        } else {
+          fds[i].fd = -1;
+          close(i);
+        }
+      }
+    }
   \end{ccode}
 \end{frame}
 \begin{frame}[fragile]{poll不足}
-  \begin{ccode}
-  \end{ccode}
+  \begin{enumerate}
+    \item \mintinline{c}{struct pollfd} 不够灵活
+    \item pool函数返回后需要遍历所有fd $O(n)$
+  \end{enumerate}
 \end{frame}
 \subsection{kqueue}
 \begin{frame}[fragile]{kqueue系统调用}
