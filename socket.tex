@@ -192,6 +192,7 @@
 \begin{frame}[fragile]{收发HTTP数据}
   \begin{ccode}
     char req[] = "GET / HTTP/1.0\r\nHost: bilibili.com\r\n\r\n";
+    send(sockfd, req, sizeof req, 0);
     if ((numbytes = recv(sockfd, buf, 1024, 0)) == -1) {
       perror("==> client: recv");
       return 3;
