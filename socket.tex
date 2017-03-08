@@ -1,7 +1,7 @@
 \documentclass[UTF8]{beamer}
 
 \usepackage{minted}
-\newminted{c}{autogobble,breaklines}
+\newminted{c}{autogobble,breaklines,linenos,mathescape}
 
 \usepackage{xeCJK}
 \setCJKmainfont{STFangsong}
@@ -19,6 +19,7 @@
   \end{frame}
 }
 \setbeamerfont{subsection in toc}{size=\small}
+\setbeamersize{text margin left=2em}
 
 \title{Unix Socket 编程入门}
 \author{吕海涛 \\ \texttt{share@lvht.net}}
@@ -288,15 +289,72 @@
 \subsection{select}
 \begin{frame}[fragile]{select系统调用}
   \begin{ccode}
+    #include <sys/select.h>
+    #include <sys/time.h>
+    int select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset, const struct timeval *timeout);
+
+    /* clear all bits in fdset */
+    void FD_ZERO(fd_set *fdset);
+    /* turn on the bit for fd in fdset */
+    void FD_SET(int fd, fd_set *fdset);
+    /* turn off the bit for fd in fdset */
+    void FD_CLR(int fd, fd_set *fdset);
+    /* is the bit for fd on in fdset ? */
+    int FD_ISSET(int fd, fd_set *fdset);
+
+    struct timeval { long tv_sec; long tv_usec; };
   \end{ccode}
 \end{frame}
-\begin{frame}[fragile]{select流程}
+\begin{frame}[fragile]{初始化}
   \begin{ccode}
+    // ...
+    fd_set fds, fds2;
+    int fdmax;
+    fcntl(listen_fd, F_SETFL, O_NONBLOCK);
+
+    FD_ZERO(&fds);
+    FD_SET(listen_fd, &fds);
+    fdmax = listen_fd;
+  \end{ccode}
+\end{frame}
+\begin{frame}[fragile]{主事件循环}
+  \begin{ccode}
+    while (1) {
+      fds2 = fds; // why?
+      if (select(fdmax+1, &fds2, NULL, NULL, NULL) == -1) {
+        perror("==> server: select");
+        return 4;
+      }
+      // check every fd
+    }
+  \end{ccode}
+\end{frame}
+\begin{frame}[fragile]{fd事件检查}
+  \begin{ccode}
+    for (int i = 0; i <= fdmax; i++) {
+      if (!FD_ISSET(i, &fds2)) continue;
+      if (i == listen_fd) { // listen socket has new connection
+        int cli_addr_len = sizeof cli_addr;
+        conn_fd = accept(listen_fd, (struct sockaddr *)&cli_addr, &cli_addr_len);
+        fcntl(conn_fd, F_SETFL, O_NONBLOCK);
+        FD_SET(conn_fd, &fds);
+        if (conn_fd > fdmax) fdmax = conn_fd;
+      } else { // client sent data to us
+        recv_num = recv(i, buf, sizeof buf, 0);
+        if (recv_num > 0) { send(i, buf, recv_num, 0); }
+        else {
+          FD_CLR(i, &fds); close(i);
+        }
+      }
+    }
   \end{ccode}
 \end{frame}
 \begin{frame}[fragile]{select不足}
-  \begin{ccode}
-  \end{ccode}
+  \begin{enumerate}
+      \item 每次调用select函数后需要重复设置fd\_set
+      \item select函数返回后需要遍历所有fd $O(n)$
+      \item fd\_set 容量有限 $<1024$
+  \end{enumerate}
 \end{frame}
 \subsection{poll}
 \begin{frame}[fragile]{poll系统调用}
