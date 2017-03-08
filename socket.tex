@@ -223,7 +223,57 @@
   \end{ccode}
 \end{frame}
 \subsection{服务端示例}
-\begin{frame}{服务端示例}
+\begin{frame}[fragile]{数据初始化}
+  \begin{ccode}
+    int listen_fd, conn_fd, recv_num;
+    struct sockaddr_in serv_addr, cli_addr;
+    char buf[1024];
+
+    listen_fd = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (listen_fd == -1) {
+      perror("==> server: socket");
+      return 1;
+    }
+
+    memset(&serv_addr, 0, sizeof serv_addr);
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    serv_addr.sin_port = htons(1234);
+  \end{ccode}
+\end{frame}
+\begin{frame}[fragile]{监听端口}
+  \begin{ccode}
+    if (bind(listen_fd, (struct sockaddr *)&serv_addr, sizeof serv_addr) == -1) {
+      perror("==> server: bind");
+      return 2;
+    }
+
+    if (listen(listen_fd, 1) == -1) {
+      perror("==> server: listen");
+      return 3;
+    }
+  \end{ccode}
+\end{frame}
+\begin{frame}[fragile]{处理连接}
+  \begin{ccode}
+    while (1) {
+      int cli_addr_len = sizeof cli_addr;
+      conn_fd = accept(listen_fd, (struct sockaddr *)&cli_addr, &cli_addr_len);
+      if (conn_fd == -1) {
+        perror("==> server: accept");
+        continue;
+      }
+      do {
+        recv_num = recv(conn_fd, buf, sizeof buf, 0);
+        send(conn_fd, buf, recv_num, 0);
+      } while (recv_num > 0);
+      close(conn_fd);
+    }
+  \end{ccode}
+\end{frame}
+\begin{frame}[fragile]{}
+  \begin{ccode}
+  \end{ccode}
 \end{frame}
 \section{IO模型}
 \begin{frame}
