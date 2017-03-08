@@ -18,8 +18,8 @@
     ]
   \end{frame}
 }
-\setbeamerfont{subsection in toc}{size=\small}
-% \setbeamersize{text margin left=2em}
+% \setbeamerfont{subsection in toc}{size=\small}
+\setbeamersize{text margin left=2em}
 
 \title{Unix Socket 编程入门}
 \author{吕海涛 \\ \texttt{share@lvht.net}}
@@ -434,17 +434,57 @@
     \item pool函数返回后需要遍历所有fd $O(n)$
   \end{enumerate}
 \end{frame}
-\subsection{kqueue}
-\begin{frame}[fragile]{kqueue系统调用}
+\subsection{epoll}
+\begin{frame}[fragile]{epoll系统调用}
   \begin{ccode}
+    #include <sys/epoll.h>
+
+    int epoll_create1(int flags);
+    int epoll_ctl(int epfd, int op, int fd, struct epoll_event *event);
+    int epoll_wait(int epfd, struct epoll_event *events, int maxevents, int timeout);
   \end{ccode}
 \end{frame}
-\begin{frame}[fragile]{kqueue流程}
+\begin{frame}[fragile]{初始化}
   \begin{ccode}
+    int epollfd = epoll_create1(0);
+    struct epoll_event ev, events[32];
+    ev.events = EPOLLIN;
+    ev.data.fd = listen_fd;
+    epoll_ctl(epollfd, EPOLL_CTL_ADD, listen_fd, &ev)
   \end{ccode}
 \end{frame}
-\begin{frame}[fragile]{kqueue不足}
+\begin{frame}[fragile]{主事件循环}
   \begin{ccode}
+    while (1) {
+      int nfds = epoll_wait(epollfd, events, sizeof events, -1);
+      for (int i = 0; i <= nfds; i++) {
+      // check fd
+      }
+    }
+  \end{ccode}
+\end{frame}
+\begin{frame}[fragile]{检查传入连接}
+  \begin{ccode}
+    int cli_addr_len = sizeof cli_addr;
+    conn_fd = accept(listen_fd, (struct sockaddr *)&cli_addr, &cli_addr_len);
+
+    fcntl(conn_fd, F_SETFL, O_NONBLOCK);
+    ev.events = EPOLLIN;
+    ev.data.fd = conn_fd;
+    epoll_ctl(epollfd, EPOLL_CTL_ADD, conn_fd, &ev)
+  \end{ccode}
+\end{frame}
+\begin{frame}[fragile]{检查传入连接}
+  \begin{ccode}
+    int fd = events[i].data.fd;
+    recv_num = recv(fd, buf, sizeof buf, 0);
+
+    if (recv_num > 0) {
+      send(fd, buf, recv_num, 0);
+    } else {
+      epoll_ctl(epollfd, EPOLL_CTL_DEL, fd, &events[i]);
+      close(i);
+    }
   \end{ccode}
 \end{frame}
 \section{主要服务端软件IO模型}
