@@ -19,7 +19,7 @@
   \end{frame}
 }
 \setbeamerfont{subsection in toc}{size=\small}
-\setbeamersize{text margin left=2em}
+% \setbeamersize{text margin left=2em}
 
 \title{Unix Socket 编程入门}
 \author{吕海涛 \\ \texttt{share@lvht.net}}
@@ -448,24 +448,16 @@
   \end{ccode}
 \end{frame}
 \section{主要服务端软件IO模型}
-\subsection{php-fpm}
-\begin{frame}[fragile]{php-fpm}
-  \begin{ccode}
-  \end{ccode}
-\end{frame}
 \subsection{memcached}
 \begin{frame}[fragile]{memcached}
-  \begin{ccode}
-  \end{ccode}
+  \centerline{\includegraphics[width=\textwidth]{img/memcached-model.jpg}}
 \end{frame}
 \subsection{nginx}
-\begin{frame}[fragile]{nginx}
-  \begin{ccode}
-  \end{ccode}
+\begin{frame}[fragile]{nginx/php-fpm}
+  \centerline{\includegraphics[width=\textwidth]{img/nginx-model.png}}
 \end{frame}
 \subsection{swoole}
 \begin{frame}[fragile]{swoole}
-  \begin{ccode}
-  \end{ccode}
+  \centerline{\includegraphics[height=\textheight]{img/swoole-model.jpeg}}
 \end{frame}
 \end{document}
