@@ -18,6 +18,7 @@
     ]
   \end{frame}
 }
+\setbeamerfont{subsection in toc}{size=\small}
 
 \title{Unix Socket 编程入门}
 \author{吕海涛 \\ \texttt{share@lvht.net}}
@@ -271,23 +272,77 @@
     }
   \end{ccode}
 \end{frame}
-\begin{frame}[fragile]{}
+\section{IO模型}
+\subsection{阻塞IO}
+\begin{frame}{阻塞IO}
+  \centerline{\includegraphics[width=\textwidth]{img/block.png}}
+\end{frame}
+\subsection{非阻塞IO}
+\begin{frame}{非阻塞IO}
+  \centerline{\includegraphics[width=\textwidth]{img/non-block.png}}
+\end{frame}
+\section{IO多路复用}
+\begin{frame}{总体流程}
+  \centerline{\includegraphics[width=\textwidth]{img/multi-io.png}}
+\end{frame}
+\subsection{select}
+\begin{frame}[fragile]{select系统调用}
   \begin{ccode}
   \end{ccode}
 \end{frame}
-\section{IO模型}
-\begin{frame}
+\begin{frame}[fragile]{select流程}
+  \begin{ccode}
+  \end{ccode}
 \end{frame}
-\subsection{阻塞IO}
-\subsection{非阻塞IO}
-\subsection{IO多路复用}
-\subsubsection{select}
-\subsubsection{poll}
-\subsubsection{kqueue}
+\begin{frame}[fragile]{select不足}
+  \begin{ccode}
+  \end{ccode}
+\end{frame}
+\subsection{poll}
+\begin{frame}[fragile]{poll系统调用}
+  \begin{ccode}
+  \end{ccode}
+\end{frame}
+\begin{frame}[fragile]{poll流程}
+  \begin{ccode}
+  \end{ccode}
+\end{frame}
+\begin{frame}[fragile]{poll不足}
+  \begin{ccode}
+  \end{ccode}
+\end{frame}
+\subsection{kqueue}
+\begin{frame}[fragile]{kqueue系统调用}
+  \begin{ccode}
+  \end{ccode}
+\end{frame}
+\begin{frame}[fragile]{kqueue流程}
+  \begin{ccode}
+  \end{ccode}
+\end{frame}
+\begin{frame}[fragile]{kqueue不足}
+  \begin{ccode}
+  \end{ccode}
+\end{frame}
 \section{主要服务端软件IO模型}
-\subsection{Redis}
-\subsection{PHP-FPM}
-\subsection{Memcached}
-\subsection{Nginx}
-\subsection{Swoole}
+\subsection{php-fpm}
+\begin{frame}[fragile]{php-fpm}
+  \begin{ccode}
+  \end{ccode}
+\end{frame}
+\subsection{memcached}
+\begin{frame}[fragile]{memcached}
+  \begin{ccode}
+  \end{ccode}
+\end{frame}
+\subsection{nginx}
+\begin{frame}[fragile]{nginx}
+  \begin{ccode}
+  \end{ccode}
+\end{frame}
+\subsection{swoole}
+\begin{frame}[fragile]{swoole}
+  \begin{ccode}
+  \end{ccode}
+\end{frame}
 \end{document}
